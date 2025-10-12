@@ -1,4 +1,8 @@
 #   Project 1 SI201
+#   Names: Emma Blando and Vanessa Adan
+#   Date: 10 October 2025
+#   How we used AI:
+
 
 import pandas as pd
 import csv
@@ -65,9 +69,124 @@ def agg_sales_by_state(state_totals):
 #state_totals = superstore_df("SampleSuperstore.csv")
 #sales_by_state = agg_sales_by_state(state_totals)
 
+def top_bottom_states(sales_by_state,n):
+    '''Takes aggregated sales dictionary and n.
+        Sorts states by total sales from highest to lowest.
+        Returns two lists of top and bottom n states.'''
+    
+    # dictionary to list of tuple that sorts by sales
+    sorted_states = sorted(sales_by_state.items(),key=lambda x: x[1],reverse=True)
 
+    # get top and bottom n of above list
+    top_n = sorted_states[:n]
+    bottom_n = sorted_states[-n:]
+
+    return top_n,bottom_n
 
     
+# state_totals = superstore_df("SampleSuperstore.csv")
+# sales_by_state = agg_sales_by_state(state_totals)
+# top, bottom = top_bottom_states(sales_by_state, 5)
+
+def state_tables(top_n,bottom_n,out_dir='outputs'):
+    '''Writes top and bottom n states into two separate CSV files
+        inside outputs folder.'''
+    
+    # create directory and define file paths
+    os.makedirs(out_dir,exist_ok=True)
+    top = os.path.join(out_dir, "top_states.csv")
+    bottom = os.path.join(out_dir,"bottom_states.csv")
+
+    # write top states from list from last function
+    with open(top,'w',newline='') as top_file:
+        writer = csv.writer(top_file)
+        writer.writerow(['State','TotalSales'])
+        writer.writerows(top_n)
+
+     # write bottom states from list from last function
+    with open(bottom,'w',newline='') as bottom_file:
+        writer = csv.writer(bottom_file)
+        writer.writerow(['State','TotalSales'])
+        writer.writerows(bottom_n)
+    
+
+
+# originally had this function LAST in my function decomposition but realized that getting this dictionary
+# would be helpful when plotting my data, thus switched order of last two functions
+def region_cat_table(csv_path):
+    '''Reads Sample superstore and returns nested dict with the region and category/total sales.
+     Plots bar chart of Category vs. Aggregated Sales for a  given region'''
+
+    # create directory
+    region_cat_totals = {}
+
+    #read Superstore csv and get values for Region, Category, and Sales
+    with open(csv_path, newline='') as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            region = r.get('Region').strip()
+            category = r.get('Category').strip()
+            sales_str = r.get('Sales').strip()
+            # if empty, continue
+            if not region or not category or not sales_str:
+                continue
+            
+            # create nested dict for each region and agg sales price to each category
+            if region not in region_cat_totals:
+                region_cat_totals[region] = {}
+            if category not in region_cat_totals[region]:
+                region_cat_totals[region][category] = 0.0
+
+            region_cat_totals[region][category] += float(sales_str)
+    
+    return region_cat_totals
+
+
+def plot_region_cat_bar(csv_path, out_dir='outputs',save=True):
+    '''Makes a bar chart of total sales per region per category
+        and saves to outputs as png.'''
+    
+    region_data = region_cat_table(csv_path)
+
+    regions = sorted(region_data.keys())
+    #asked ChatGPT for help here
+    categories = sorted({cat for reg in regions for cat in region_data[reg].keys()})
+
+    values_by_reg = []
+    for r in regions:
+        values_by_reg.append([region_data[r].get(cat, 0.0) for cat in categories])
+    
+    os.makedirs(out_dir,exist_ok=True)
+    fig, ax = plt.subplots()
+
+    x = list(range(len(categories)))
+    nreg = len(regions)
+    width = 0.8/max(nreg, 1)
+
+    for i,region in enumerate(regions):
+        offsets = [xi - 0.4 + width/2 + i*width for xi in x]
+        ax.bar(offsets,values_by_reg[i], width=width,label=region)
+    
+    ax.set_xticks(x)
+    ax.set_xticklabels(categories)
+    ax.set_ylabel('Sales')
+    ax.set_title('Sales per Region per Category')
+    ax.legend()
+    plt.tight_layout()
+
+    out_path = os.path.join(out_dir, 'region_cat_totals_grouped.png')
+    if save:
+        plt.savefig(out_path)
+        plt.close()
+        return out_path
+    else:
+        plt.show()
+        return None
+
+png_path = plot_region_cat_bar("SampleSuperstore.csv")
+print("Saved:", png_path)
+
+
 
 
 
