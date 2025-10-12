@@ -11,6 +11,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
+
+
+## FIRST FUNCTION: Sales by Category per Region
+
 def superstore_df(filename):
     '''Reads Sample Superstore CSV using csv module.
         Keeps only State and Sales columns and drops NA rows.
@@ -34,8 +39,6 @@ def superstore_df(filename):
             if state == "" or sales == "":
                 continue
             state_totals.append({"State":state, "Sales":sales})
-
-    print("Total valid rows:", len(state_totals))
 
     return state_totals
 
@@ -146,27 +149,34 @@ def plot_region_cat_bar(csv_path, out_dir='outputs',save=True):
     '''Makes a bar chart of total sales per region per category
         and saves to outputs as png.'''
     
+    #getting nested dict from above function
     region_data = region_cat_table(csv_path)
 
+    # sorting nested dict by keys
     regions = sorted(region_data.keys())
-    #asked ChatGPT for help here
+    #asked ChatGPT for help here- used curly brackets for set implementation (to avoid duplicates)
     categories = sorted({cat for reg in regions for cat in region_data[reg].keys()})
 
+    # making 4 lists (per region) by category 
     values_by_reg = []
     for r in regions:
         values_by_reg.append([region_data[r].get(cat, 0.0) for cat in categories])
     
+    # plots grouped bars
     os.makedirs(out_dir,exist_ok=True)
     fig, ax = plt.subplots()
 
+    # setting up vals for the plots
     x = list(range(len(categories)))
     nreg = len(regions)
     width = 0.8/max(nreg, 1)
 
+    # to offsets bars within each category on the plot
     for i,region in enumerate(regions):
         offsets = [xi - 0.4 + width/2 + i*width for xi in x]
         ax.bar(offsets,values_by_reg[i], width=width,label=region)
     
+    # plot characteristics/vars
     ax.set_xticks(x)
     ax.set_xticklabels(categories)
     ax.set_ylabel('Sales')
@@ -175,6 +185,7 @@ def plot_region_cat_bar(csv_path, out_dir='outputs',save=True):
     plt.tight_layout()
 
     out_path = os.path.join(out_dir, 'region_cat_totals_grouped.png')
+    # if not saved, show plot
     if save:
         plt.savefig(out_path)
         plt.close()
@@ -183,8 +194,15 @@ def plot_region_cat_bar(csv_path, out_dir='outputs',save=True):
         plt.show()
         return None
 
-png_path = plot_region_cat_bar("SampleSuperstore.csv")
-print("Saved:", png_path)
+def main():
+    state_totals = superstore_df("SampleSuperstore.csv")
+    sales_by_state = agg_sales_by_state(state_totals)
+    top_n, bottom_n = top_bottom_states(sales_by_state,5)
+    state_tables(top_n,bottom_n)
+    plot_region_cat_bar("SampleSuperstore.csv")
+
+if __name__== "__main__":
+    main()
 
 
 
