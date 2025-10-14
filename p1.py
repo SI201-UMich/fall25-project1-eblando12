@@ -9,10 +9,7 @@ import csv
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-
-
+# ----------------------------------------------------------------------
 
 ## FIRST FUNCTION: Sales by Category per Region
 
@@ -204,8 +201,154 @@ def main():
 if __name__== "__main__":
     main()
 
+#------------------------------------------------------------------------------------
 
+## SECOND FUNCTION: Quantity of Product per Sub-Category
+#   also, realized my function decomp. was wrong (was using Category and Sales for both functions)
+#   so I switched this second calculation to do Quantity
+#  of Sub-Category products per category. (3 columns)
 
+def superstore_df2(csv_path):
+    '''Reads Sample Superstore CSV using csv module.
+        Keeps only Category, Sub-Category, and Quantity columns and drops NA rows.
+        Returns a list of Dictionaries'''
+    
+    rows = []
+    with open(csv_path,newline='') as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            category = r.get('Category').strip()
+            subcategory = r.get('Sub-Category').strip()
+            quantity = r.get('Quantity').strip()
+            if not category or not subcategory or not quantity:
+                continue
+            rows.append({'Category': category, 'Sub-Category': subcategory, 'Quantity': quantity})
+    return rows
+
+def agg_qty_by_category(rows):
+    '''Created nested dictionary of Categories' Sub-Category quantity totals.'''
+
+    # create initial dictionary
+    out = {}
+
+    #loop through every row from previous function )(OG DF w/out NAs)
+    for r in rows:
+        cat = r['Category']
+        sub_cat = r['Sub-Category']
+        q = float(r['Quantity'])
+
+    # create nested dict with sums of sub_category quantities
+        if cat not in out:
+            out[cat] = {}
+        if sub_cat not in out[cat]:
+            out[cat][sub_cat] = 0.0
+        out[cat][sub_cat] += q
+    return out
+
+def sub_category_table(agg,out_dir='outputs'):
+    '''Writes a csv with columns:
+        Category, Sub-Category, Total Quantity'''
+    
+    # make directory
+    os.makedirs(out_dir,exist_ok=True)
+
+    # create path for csv
+    path= os.path.join(out_dir,'subcategory_quantity.csv')
+    
+    # write rows and open writer
+    with open(path,'w',newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Category','Sub-Category','Total_Quantity'])
+
+        # for every category in nested dict from function above,  write row
+        # including subcategory and val
+        for category in sorted(agg.keys()):
+            for sub, val in sorted(agg[category].items(), key=lambda x: x[0]):
+                writer.writerow([category,sub,val])
+    return path
+
+def main():
+    rows = superstore_df2("SampleSuperstore.csv")
+    agg = agg_qty_by_category(rows)
+    sub_category_table(agg)
+
+if __name__=="__main__":
+    main()
+
+        
+# -------------------------------------------------------------------------------------
+
+#    TEST FUNCTIONS:
+import unittest
+
+class TestProject1(unittest.TestCase):
+    # set up
+    def setUp(self):
+        self.csv_path = "SampleSuperstore.csv"
+        #check that file exists
+        self.assertTrue(os.path.exists(self.csv_path), "SampleSuperstore.csv not found")
+
+    # general tests
+    def test_top_and_bottom_statecsvs(self):
+        #testing that the output is a list that has:
+        # length greater than 0
+        # dictionaries as items
+        # state and sales present
+        rows = superstore_df(self.csv_path)
+        self.assertIsInstance(rows,list)
+        self.assertGreater(len(rows),0)
+        self.assertIsInstance(rows[0],dict)
+        self.assertIn("State",rows[0])
+        self.assertIn("Sales",rows[0])
+
+    def test_region_nested_dictcsvs(self):
+        # testing that the output is a dict that has:
+        # nested dict
+        # category
+        # quantity of subcategory
+        nest = region_cat_table(self.csv_path)
+        self.assertIsInstance(nest,dict)
+
+        # AI helped here with how to test for each region without 'picking' one
+        region = next(iter(nest))
+        
+        self.assertIsInstance(nest[region],dict)
+        category,quant = next(iter(nest[region].items()))
+        self.assertIsInstance(category,str)
+        self.assertIsInstance(quant,float)
+    
+
+    # edge cases 
+    def test_top_and_bottom_statecsvs_edge(self):
+        # tests that both top and bottom csv files exists and have more than just header row
+        # checks that my function produced usable output files
+        rows = superstore_df(self.csv_path)
+        agg = agg_sales_by_state(rows)
+        top_n,bottom_n = top_bottom_states(agg,5)
+
+        outdir='outputs'
+        state_tables(top_n,bottom_n,out_dir=outdir)
+        
+        for name in ['top_states.csv','bottom_states.csv']:
+            path = os.path.join(outdir,name)
+            self.assertTrue(os.path.exists(path))
+            with open(path,newline='') as f:
+                reader = list(csv.reader(f))
+                self.assertGreater(len(reader), 1,f"{name} is empty.")
+    
+    def test_region_nested_dictcsvs_edge(self):
+        # tests that the subcategory csv exists and contains data
+        # tests a different type of data- nested dictionary for actual content
+        rows = superstore_df2(self.csv_path)
+        agg = agg_qty_by_category(rows)
+        out = sub_category_table(agg, out_dir="outputs")
+        self.assertTrue(os.path.exists(out))
+        with open(out,newline='') as f:
+            reader = list(csv.reader(f))
+            self.assertGreater(len(reader),1,"subcategory_quantity.csv appears empty.")
+
+if __name__=="__main__":
+    unittest.main(verbosity=2)        
 
 
 
