@@ -1,7 +1,10 @@
 #   Project 1 SI201
 #   Names: Emma Blando and Vanessa Adan
 #   Date: 10 October 2025
-#   How we used AI:
+#   Who wrote what function:
+#   How we used AI: 
+#   - Emma: helped optimize certain lines of code- almost all instances of AI use are commented
+#       in the code
 
 
 import pandas as pd
@@ -9,9 +12,10 @@ import csv
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+
 # ----------------------------------------------------------------------
 
-## FIRST FUNCTION: Sales by Category per Region
+## FIRST FUNCTION DECOMPOSITION: Sales by Category per Region
 
 def superstore_df(filename):
     '''Reads Sample Superstore CSV using csv module.
@@ -59,7 +63,7 @@ def agg_sales_by_state(state_totals):
         state = row["State"]
         sales = row["Sales"]
 
-        # if statement to add every unique state to dicitionary/avoid duplicates
+        # if statement to add every unique state to dictionary/avoid duplicates
         if state not in sales_by_state:
             sales_by_state[state] = 0.0
         sales_by_state[state] += float(sales)
@@ -75,6 +79,7 @@ def top_bottom_states(sales_by_state,n):
         Returns two lists of top and bottom n states.'''
     
     # dictionary to list of tuple that sorts by sales
+    #   AI suggested using lambda rather than looping
     sorted_states = sorted(sales_by_state.items(),key=lambda x: x[1],reverse=True)
 
     # get top and bottom n of above list
@@ -213,6 +218,8 @@ def superstore_df2(csv_path):
         Keeps only Category, Sub-Category, and Quantity columns and drops NA rows.
         Returns a list of Dictionaries'''
     
+    # similar concept as the other read in csv function from the other decomp.
+    # this one returns list 
     rows = []
     with open(csv_path,newline='') as f:
         reader = csv.DictReader(f)
